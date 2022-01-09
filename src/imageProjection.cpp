@@ -46,8 +46,8 @@ private:
     ros::Subscriber subLaserCloud;
     ros::Publisher  pubLaserCloud;
     
-    ros::Publisher pubExtractedCloud;
-    ros::Publisher pubLaserCloudInfo;
+    ros::Publisher pubExtractedCloud; //发布去畸变的点云
+    ros::Publisher pubLaserCloudInfo; //发布去畸变的点云以及一些其他信息
  
     ros::Subscriber subImu;
     std::deque<sensor_msgs::Imu> imuQueue;
@@ -67,13 +67,13 @@ private:
     bool firstPointFlag;
     Eigen::Affine3f transStartInverse;
  
-    pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn;
+    pcl::PointCloud<PointXYZIRT>::Ptr laserCloudIn; //储存当前帧点云，每次会clear
     pcl::PointCloud<OusterPointXYZIRT>::Ptr tmpOusterCloudIn;
-    pcl::PointCloud<PointType>::Ptr   fullCloud;
-    pcl::PointCloud<PointType>::Ptr   extractedCloud;
+    pcl::PointCloud<PointType>::Ptr   fullCloud; 
+    pcl::PointCloud<PointType>::Ptr   extractedCloud; //储存当前帧中提取的有效激光点，每次会clear
  
     int deskewFlag;
-    cv::Mat rangeMat;
+    cv::Mat rangeMat; //储存当前帧每个点的距离，每次会重置
  
     bool odomDeskewFlag;
     float odomIncreX;

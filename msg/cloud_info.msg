@@ -1,8 +1,8 @@
 # Cloud Info
 Header header 
 
-int32[] startRingIndex
-int32[] endRingIndex
+int32[] startRingIndex #储存每一线的有效点的开始编号（前五个点无效）
+int32[] endRingIndex #储存每一线结束激光点开始的编号（后五个点无效）
 
 int32[]  pointColInd # point column index in range image
 float32[] pointRange # point range 
