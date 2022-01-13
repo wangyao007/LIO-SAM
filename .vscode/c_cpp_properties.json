@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/wy/SLAM/lidar-slam/catkin_lio-sam/devel/include/**",
+                "/opt/ros/melodic/include/**",
+                "/home/wy/SLAM/lidar-slam/catkin_lio-sam/src/LIO-SAM/include/**",
+                "/usr/include/**",
+                "/home/wy/SLAM/lidar-slam/catkin_lio-sam/src/LIO-SAM/src/**",
+                "/opt/ros/melodic/include/tf/**",
+                "/opt/ros/melodic/include/roscpp/**",
+                "/opt/ros/melodic/include/rospy/**",
+                "/opt/ros/melodic/include/cv_bridge/**",
+                "/opt/ros/melodic/include/pcl_conversions/**",
+                "/opt/ros/melodic/include/std_msgs/**",
+                "/opt/ros/melodic/include/geomtry_msgs/**",
+                "/opt/ros/melodic/include/nav_msgs/**",
+                "/opt/ros/melodic/include/message_generation/**",
+                "/opt/ros/melodic/include/visualization_msgs/**"
+            ],
+            "name": "ROS",
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}

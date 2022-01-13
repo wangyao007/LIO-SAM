@@ -345,7 +345,8 @@ public:
         bool degenerate = (int)odomMsg->pose.covariance[0] == 1 ? true : false;
         gtsam::Pose3 lidarPose = gtsam::Pose3(gtsam::Rot3::Quaternion(r_w, r_x, r_y, r_z), gtsam::Point3(p_x, p_y, p_z));
  
- 
+
+        //这个地方的优化根本没有起作用，没有构成图优化个锤子
         // 0. initialize system
         // 0. 系统初始化，第一帧
         if (systemInitialized == false)
@@ -379,10 +380,10 @@ public:
             graphFactors.add(priorPose);
             // initial velocity
             prevVel_ = gtsam::Vector3(0, 0, 0);
-            gtsam::PriorFactor<gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise);
+            gtsam::PriorFactor<gtsam::Vector3> priorVel(V(0), prevVel_, priorVelNoise); //先验证速度协方差给的很大1e4
             graphFactors.add(priorVel);
             // initial bias
-            prevBias_ = gtsam::imuBias::ConstantBias();
+            prevBias_ = gtsam::imuBias::ConstantBias(); //都为0
             gtsam::PriorFactor<gtsam::imuBias::ConstantBias> priorBias(B(0), prevBias_, priorBiasNoise);
             graphFactors.add(priorBias);
             // add values
@@ -390,9 +391,14 @@ public:
             graphValues.insert(X(0), prevPose_);
             graphValues.insert(V(0), prevVel_);
             graphValues.insert(B(0), prevBias_);
+            prevPose_.print();
+            prevBias_.print();
             // optimize once
             // 优化一次
             optimizer.update(graphFactors, graphValues);
+            std::cout<<"after update -------------------------"<<std::endl;
+            prevPose_.print();
+            prevBias_.print();
             //图和节点均清零  为什么要清零不能继续用吗?
             //是因为节点信息保存在gtsam::ISAM2 optimizer，所以要清理后才能继续使用
             graphFactors.resize(0);
@@ -415,6 +421,7 @@ public:
             // get updated noise before reset
             // 前一帧的位姿、速度、偏置噪声模型
             //保存最后的噪声值
+            //TODO 边缘化操作？？应该是直接取对应的协方差
             gtsam::noiseModel::Gaussian::shared_ptr updatedPoseNoise = gtsam::noiseModel::Gaussian::Covariance(optimizer.marginalCovariance(X(key-1)));
             gtsam::noiseModel::Gaussian::shared_ptr updatedVelNoise  = gtsam::noiseModel::Gaussian::Covariance(optimizer.marginalCovariance(V(key-1)));
             gtsam::noiseModel::Gaussian::shared_ptr updatedBiasNoise = gtsam::noiseModel::Gaussian::Covariance(optimizer.marginalCovariance(B(key-1)));

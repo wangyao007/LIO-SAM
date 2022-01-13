@@ -130,6 +130,7 @@ public:
         }
     }
  
+    //TODO 没太明白，这不是提取曲率大的点了吗？
     void markOccludedPoints()
     {
         int cloudSize = extractedCloud->points.size();
@@ -218,7 +219,7 @@ public:
                     // 激光点的索引
                     int ind = cloudSmoothness[k].ind;
                     // 当前激光点还未被处理，且曲率大于阈值，则认为是角点
-                    if (cloudNeighborPicked[ind] == 0 && cloudCurvature[ind] > edgeThreshold)
+                    if (cloudNeighborPicked[ind] == 0 && cloudCurvature[ind] > edgeThreshold) //1.0
                     {
                         // 每段只取20个角点，如果单条扫描线扫描一周是1800个点，则划分6段，每段300个点，从中提取20个角点
                         largestPickedNum++;
