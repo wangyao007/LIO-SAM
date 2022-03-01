@@ -66,8 +66,9 @@ public:
     ros::Publisher pubLaserCloudSurround;
     ros::Publisher pubLaserOdometryGlobal;
     ros::Publisher pubLaserOdometryIncremental;
-    ros::Publisher pubKeyPoses;
+    ros::Publisher pubKeyPoses; 
     ros::Publisher pubPath;
+    ros::Publisher pubTest; //新加，用于debug
  
     ros::Publisher pubHistoryKeyFrames;
     ros::Publisher pubIcpKeyFrames;
@@ -90,7 +91,7 @@ public:
     // 历史所有关键帧的平面点集合（降采样）
     vector<pcl::PointCloud<PointType>::Ptr> surfCloudKeyFrames;
     // 历史关键帧位姿（位置）
-    pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D;
+    pcl::PointCloud<PointType>::Ptr cloudKeyPoses3D; //储存关键帧的轨迹
     // 历史关键帧位姿
     pcl::PointCloud<PointTypePose>::Ptr cloudKeyPoses6D;
     pcl::PointCloud<PointType>::Ptr copy_cloudKeyPoses3D;
@@ -104,13 +105,13 @@ public:
     // 当前激光帧平面点集合，降采样
     pcl::PointCloud<PointType>::Ptr laserCloudSurfLastDS; // downsampled surf featuer set from odoOptimization
  
-    // 当前帧与局部map匹配上了的角点、平面点，加入同一集合；后面是对应点的参数
+    // 同时储存当前帧与局部map匹配上了的角点、平面点，加入同一集合；后面是对应点的参数
     pcl::PointCloud<PointType>::Ptr laserCloudOri;
     pcl::PointCloud<PointType>::Ptr coeffSel;
  
     // 当前帧与局部map匹配上了的角点、参数、标记
     std::vector<PointType> laserCloudOriCornerVec; // corner point holder for parallel computation
-    std::vector<PointType> coeffSelCornerVec;
+    std::vector<PointType> coeffSelCornerVec; //储存了每个角点到直线的距离信息
     std::vector<bool> laserCloudOriCornerFlag;
     // 当前帧与局部map匹配上了的平面点、参数、标记
     std::vector<PointType> laserCloudOriSurfVec; // surf point holder for parallel computation
@@ -119,7 +120,7 @@ public:
  
     map<int, pair<pcl::PointCloud<PointType>, pcl::PointCloud<PointType>>> laserCloudMapContainer;
  
-    // 局部map的角点集合
+    // 局部map的角点集合,每次重置
     pcl::PointCloud<PointType>::Ptr laserCloudCornerFromMap;
     // 局部map的平面点集合
     pcl::PointCloud<PointType>::Ptr laserCloudSurfFromMap;
@@ -185,6 +186,7 @@ public:
         isam = new ISAM2(parameters);
         // 发布历史关键帧里程计
         pubKeyPoses                 = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/trajectory", 1);
+        pubTest                     = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/test", 1);
         // 发布局部关键帧map的特征点云
         pubLaserCloudSurround       = nh.advertise<sensor_msgs::PointCloud2>("lio_sam/mapping/map_global", 1);
         // 发布激光里程计，rviz中表现为坐标轴
@@ -482,8 +484,9 @@ public:
     */
     void extractSurroundingKeyFrames()
     {
-        if (cloudKeyPoses3D->points.empty() == true)
+        if (cloudKeyPoses3D->points.empty() == true){
             return; 
+        }
         
         // if (loopClosureEnableFlag == true)
         // {
@@ -497,8 +500,8 @@ public:
  
     void extractNearby()
     {
-        pcl::PointCloud<PointType>::Ptr surroundingKeyPoses(new pcl::PointCloud<PointType>());
-        pcl::PointCloud<PointType>::Ptr surroundingKeyPosesDS(new pcl::PointCloud<PointType>());
+        pcl::PointCloud<PointType>::Ptr surroundingKeyPoses(new pcl::PointCloud<PointType>()); 
+        pcl::PointCloud<PointType>::Ptr surroundingKeyPosesDS(new pcl::PointCloud<PointType>());//储存经过降采样的关键帧pose
         std::vector<int> pointSearchInd;
         std::vector<float> pointSearchSqDis;
  
@@ -521,7 +524,9 @@ public:
         //把相邻关键帧位姿集合，进行下采样，滤波后存入surroundingKeyPosesDS
         downSizeFilterSurroundingKeyPoses.setInputCloud(surroundingKeyPoses);
         downSizeFilterSurroundingKeyPoses.filter(*surroundingKeyPosesDS);
- 
+        //publishCloud(&pubTest, surroundingKeyPosesDS, timeLaserInfoStamp, odometryFrame);
+        //std::cout<<"cloudKeyPoses3D "<< cloudKeyPoses3D->points.size()<<std::endl;
+
         for(auto& pt : surroundingKeyPosesDS->points)
         {
             //k近邻搜索,找出最近的k个节点（这里是1）
@@ -560,7 +565,7 @@ public:
         for (int i = 0; i < (int)cloudToExtract->size(); ++i)
         {
             // 距离超过阈值，丢弃
-            if (pointDistance(cloudToExtract->points[i], cloudKeyPoses3D->back()) > surroundingKeyframeSearchRadius)
+            if (pointDistance(cloudToExtract->points[i], cloudKeyPoses3D->back()) > surroundingKeyframeSearchRadius) //50
                 continue;
             // 相邻关键帧索引
             int thisKeyInd = (int)cloudToExtract->points[i].intensity;
@@ -582,6 +587,7 @@ public:
             }
             
         }
+        //publishCloud(&pubTest, laserCloudCornerFromMap, timeLaserInfoStamp, odometryFrame);
  
         // Downsample the surrounding corner key frames (or map)
         // 降采样局部角点map
@@ -606,7 +612,7 @@ public:
         //对当前帧点云降采样  刚刚完成了周围关键帧的降采样  
         //大量的降采样工作无非是为了使点云稀疏化 加快匹配以及实时性要求
         laserCloudCornerLastDS->clear();
-        downSizeFilterCorner.setInputCloud(laserCloudCornerLast);
+        downSizeFilterCorner.setInputCloud(laserCloudCornerLast); //阈值0.2
         downSizeFilterCorner.filter(*laserCloudCornerLastDS);
         laserCloudCornerLastDSNum = laserCloudCornerLastDS->size();
  
@@ -624,7 +630,7 @@ public:
         if (cloudKeyPoses3D->points.empty())
             return;
  
-        if (laserCloudCornerLastDSNum > edgeFeatureMinValidNum && laserCloudSurfLastDSNum > surfFeatureMinValidNum)
+        if (laserCloudCornerLastDSNum > edgeFeatureMinValidNum && laserCloudSurfLastDSNum > surfFeatureMinValidNum) //10, 100
         {
             //构建kdtree
             kdtreeCornerFromMap->setInputCloud(laserCloudCornerFromMapDS);
@@ -638,7 +644,7 @@ public:
                 cornerOptimization();
                 //平面点匹配优化
                 surfOptimization();
-                //组合优化多项式系数
+                //组合优化多项式系数，将前两项得到的角点和平面点合并
                 combineOptimizationCoeffs();
  
                 if (LMOptimization(iterCount) == true)
@@ -661,7 +667,9 @@ public:
         //实现transformTobeMapped的矩阵形式转换 下面调用的函数就一行就不展开了  工具类函数
         //  把结果存入transPointAssociateToMap中
         updatePointAssociateToMap();
- 
+
+        //OpenMA 加速，即一下代码块将用numberOfCores 4 个线程执行
+        //若无for num_threads(numberOfCores)则由操作系统决定几个线程，一般一个核一个线程
         #pragma omp parallel for num_threads(numberOfCores)
         for (int i = 0; i < laserCloudCornerLastDSNum; i++)
         {
@@ -670,7 +678,7 @@ public:
             std::vector<float> pointSearchSqDis;
  
             pointOri = laserCloudCornerLastDS->points[i];
-            //第i帧的点转换到第一帧坐标系下
+            //第i帧的点转换到第一帧坐标系下（全局坐标系）
             //这里就调用了第一步中updatePointAssociateToMap中实现的transPointAssociateToMap，
             //然后利用这个变量，把pointOri的点转换到pointSel下，pointSel作为输出
             pointAssociateToMap(&pointOri, &pointSel);
@@ -843,6 +851,7 @@ public:
                 pa /= ps; pb /= ps; pc /= ps; pd /= ps;
  
                 // 检查平面是否合格，如果5个点中有点到平面的距离超过0.2m，那么认为这些点太分散了，不构成平面
+                //点到直线的距离 |Ax+By+Cz+D|/sqrt(A*A+B*B+C*C)
                 bool planeValid = true;
                 for (int j = 0; j < 5; j++) {
                     if (fabs(pa * laserCloudSurfFromMapDS->points[pointSearchInd[j]].x +

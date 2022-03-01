@@ -4,5 +4,9 @@
         "/opt/ros/melodic/lib/python2.7/dist-packages",
         "/opt/ros/eloquent/lib/python3.6/site-packages"
     ],
-    "cquery.cacheDirectory": "${workspaceFolder}/.vscode/cquery_cached_index/"
+    "cquery.cacheDirectory": "${workspaceFolder}/.vscode/cquery_cached_index/",
+    "files.associations": {
+        "ostream": "cpp",
+        "iostream": "cpp"
+    }
 }
